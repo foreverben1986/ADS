@@ -1,5 +1,5 @@
 OS_NAME ?=$(shell uname)
-LIBS = -lpthread
+LIBS = -lpthread -lcurl
 LIB_NAME = ../AdsLib-$(OS_NAME).a
 CXXFLAGS += -std=c++11
 CXXFLAGS += -pedantic

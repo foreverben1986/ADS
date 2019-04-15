@@ -1,102 +1,8 @@
 
 #include "AdsLib.h"
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <iostream>
 #include <iomanip>
-#include <string>
-#include <string.h>
-#include <curl/curl.h>
-
-size_t CurlWrite_CallbackFunc_StdString(void *contents, size_t size, size_t nmemb, std::string *s)
-{
-    size_t newLength = size * nmemb;
-    try
-    {
-        s->append((char *)contents, newLength);
-    }
-    catch (std::bad_alloc &e)
-    {
-        //handle memory problem
-        return 0;
-    }
-    return newLength;
-}
-
-std::string getData()
-{
-    // prints hello world
-    CURL *curl;
-    CURLcode res;
-
-    /* get a curl handle */
-    curl = curl_easy_init();
-
-    if (curl)
-    {
-        std::string s;
-        curl_easy_setopt(curl, CURLOPT_URL, "http://localhost:8081");
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, CurlWrite_CallbackFunc_StdString);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &s);
-
-        res = curl_easy_perform(curl);
-        /* Check for errors */
-        if (res != CURLE_OK)
-        {
-            fprintf(stderr, "curl_easy_perform() failed: %s\n",
-                    curl_easy_strerror(res));
-        }
-
-        std::cout << "++++++++++++" << std::endl;
-        std::cout << s << std::endl;
-
-        std::cout << "Program finished!" << std::endl;
-        /* always cleanup */
-        curl_easy_cleanup(curl);
-	return s;
-    }
-
-    return "";
-}
-
-int postData()
-{
-    // prints hello world
-    CURL *curl;
-    CURLcode res;
-    char *postthis = "badPoint";
-
-    /* get a curl handle */
-    curl = curl_easy_init();
-
-    if (curl)
-    {
-        std::string s;
-        curl_easy_setopt(curl, CURLOPT_URL, "http://localhost:8081");
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, CurlWrite_CallbackFunc_StdString);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &s);
-        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, postthis);
-
-        res = curl_easy_perform(curl);
-        /* Check for errors */
-        if (res != CURLE_OK)
-        {
-            fprintf(stderr, "curl_easy_perform() failed: %s\n",
-                    curl_easy_strerror(res));
-        }
-
-        std::cout << "++++++++++++" << std::endl;
-        std::cout << s << std::endl;
-
-        std::cout << "Program finished!" << std::endl;
-        /* always cleanup */
-        curl_easy_cleanup(curl);
-    }
-
-    return 0;
-}
-
 
 static void NotifyCallback(const AmsAddr* pAddr, const AdsNotificationHeader* pNotification, uint32_t hUser)
 {
@@ -235,54 +141,25 @@ void notificationByNameExample(std::ostream& out, long port, const AmsAddr& serv
     releaseHandleExample(out, port, server, handle);
 }
 
-void WriteExample(std::ostream& out, long port, const AmsAddr& server,uint16_t wData)
+void readExample(std::ostream& out, long port, const AmsAddr& server)
 {
-    uint16_t buffer = wData;
-    std::string data = getData();
-    const char* dataChars = data.data();
-    char a = 't';
-    long size = strlen(dataChars)*sizeof(a);
-    out << "size:" << size << '\n';
-    out << "size:" << sizeof(a) << '\n';
-
-
-    const long status = AdsSyncWriteReqEx(port, &server, 0x4020,2,size, dataChars);
-    if (status) {
-        out << "ADS read failed with: " << wData<< '\n';
-        return;
-    }
-    out << "Write Data: " << wData<< '\n';
-}
-void readExample(std::ostream& out, long port, const AmsAddr& server, int* armStatusPtr)
-{
-    uint32_t bytesRead =2;
-    uint16_t buffer;
+    uint32_t bytesRead;
+    uint32_t buffer;
 
     out << __FUNCTION__ << "():\n";
-    const long status = AdsSyncReadReqEx2(port, &server, 0x4020, 0, sizeof(buffer), &buffer, &bytesRead);
-    if (*armStatusPtr != status) {
-	*armStatusPtr = status;
-	switch ((int)status) {
-	    case 0:
-	    case 4:
-	        WriteExample(out, port, server,buffer);
-		break;
-	    case 3:
-		postData();
-		break;
-	    default:
-		break;
-	}
+    for (size_t i = 0; i < 8; ++i) {
+        const long status = AdsSyncReadReqEx2(port, &server, 0x4020, 0, sizeof(buffer), &buffer, &bytesRead);
+        if (status) {
+            out << "ADS read failed with: " << std::dec << status << '\n';
+            return;
+        }
+        out << "ADS read " << std::dec << bytesRead << " bytes, value: 0x" << std::hex << buffer << '\n';
     }
-    out << "ADS read " << std::dec << bytesRead << " bytes, value: 0x" << std::hex << buffer << '\n';
-
 }
-
-
 
 void readByNameExample(std::ostream& out, long port, const AmsAddr& server)
 {
-    static const char handleName[] = "MAIN.iCount";
+    static const char handleName[] = "MAIN.byByte[4]";
     uint32_t bytesRead;
 
     out << __FUNCTION__ << "():\n";
@@ -325,8 +202,8 @@ void readStateExample(std::ostream& out, long port, const AmsAddr& server)
 
 void runExample(std::ostream& out)
 {
-    static const AmsNetId remoteNetId { 192, 168, 5, 111, 1, 1 };
-    static const char remoteIpV4[] = "192.168.5.111";
+    static const AmsNetId remoteNetId { 192, 168, 0, 231, 1, 1 };
+    static const char remoteIpV4[] = "ads-server";
 
     // uncomment and adjust if automatic AmsNetId deduction is not working as expected
     //AdsSetLocalAddress({192, 168, 0, 1, 1, 1});
@@ -344,18 +221,13 @@ void runExample(std::ostream& out)
         return;
     }
 
-    const AmsAddr remote { remoteNetId, 801 };
-    //notificationExample(out, port, remote);
-    //notificationByNameExample(out, port, remote);
-    //readExample(out, port, remote);
-   // readByNameExample(out, port, remote);
-// readStateExample(out, port, remote);
-    int armStatus = -1;
-    while(true)
-    {
-       // readStateExample(out, port, remote);
-        readExample(out, port, remote, &armStatus);
-    }
+    const AmsAddr remote { remoteNetId, AMSPORT_R0_PLC_TC3 };
+    notificationExample(out, port, remote);
+    notificationByNameExample(out, port, remote);
+    readExample(out, port, remote);
+    readByNameExample(out, port, remote);
+    readStateExample(out, port, remote);
+
     const long closeStatus = AdsPortCloseEx(port);
     if (closeStatus) {
         out << "Close ADS port failed with: " << std::dec << closeStatus << '\n';
