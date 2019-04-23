@@ -36,7 +36,7 @@ std::string getData()
     if (curl)
     {
         std::string s;
-        curl_easy_setopt(curl, CURLOPT_URL, "http://localhost:8081");
+        curl_easy_setopt(curl, CURLOPT_URL, "http://localhost:8000");
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, CurlWrite_CallbackFunc_StdString);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &s);
 
@@ -51,7 +51,7 @@ std::string getData()
         std::cout << "++++++++++++" << std::endl;
         std::cout << s << std::endl;
 
-        std::cout << "Program finished!" << std::endl;
+        std::cout << "getData finished!" << std::endl;
         /* always cleanup */
         curl_easy_cleanup(curl);
 	return s;
@@ -73,7 +73,7 @@ int postData()
     if (curl)
     {
         std::string s;
-        curl_easy_setopt(curl, CURLOPT_URL, "http://localhost:8081");
+        curl_easy_setopt(curl, CURLOPT_URL, "http://localhost:8000");
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, CurlWrite_CallbackFunc_StdString);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &s);
         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, postthis);
@@ -89,7 +89,7 @@ int postData()
         std::cout << "++++++++++++" << std::endl;
         std::cout << s << std::endl;
 
-        std::cout << "Program finished!" << std::endl;
+        std::cout << "postData finished!" << std::endl;
         /* always cleanup */
         curl_easy_cleanup(curl);
     }
