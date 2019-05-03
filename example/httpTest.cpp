@@ -67,7 +67,7 @@ int postData()
     if (curl)
     {
         std::string s;
-        curl_easy_setopt(curl, CURLOPT_URL, "http://localhost:8000");
+        curl_easy_setopt(curl, CURLOPT_URL, "http://localhost:8000/black_point");
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, CurlWrite_CallbackFunc_StdString);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &s);
         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, postthis);

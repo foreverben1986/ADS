@@ -24,11 +24,20 @@ size_t CurlWrite_CallbackFunc_StdString(void *contents, size_t size, size_t nmem
     return newLength;
 }
 
-std::string getData()
+std::string getData(uint16_t x, uint16_t y, uint16_t z)
 {
     // prints hello world
     CURL *curl;
     CURLcode res;
+    char xStr[20];
+    char yStr[20];
+    char zStr[20];
+    sprintf(xStr, "%d", x);
+    sprintf(yStr, "%d", y);
+    sprintf(zStr, "%d", z);
+    std::string url = "http://localhost:8000/getdata";
+    url += "?" + std::string(xStr) + "&"  + std::string(yStr) + "&" + std::string(zStr);
+    std::cout << "url " << url << std::endl;
 
     /* get a curl handle */
     curl = curl_easy_init();
@@ -36,7 +45,7 @@ std::string getData()
     if (curl)
     {
         std::string s;
-        curl_easy_setopt(curl, CURLOPT_URL, "http://localhost:8000");
+        curl_easy_setopt(curl, CURLOPT_URL, url.data());
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, CurlWrite_CallbackFunc_StdString);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &s);
 
@@ -60,20 +69,30 @@ std::string getData()
     return "";
 }
 
-int postData()
+int postData(uint16_t x, uint16_t y, uint16_t z)
 {
     // prints hello world
     CURL *curl;
     CURLcode res;
-    char *postthis = "badPoint";
+    const char *postthis = "test";
+    char xStr[20];
+    char yStr[20];
+    char zStr[20];
 
     /* get a curl handle */
     curl = curl_easy_init();
 
+    sprintf(xStr, "%d", x);
+    sprintf(yStr, "%d", y);
+    sprintf(zStr, "%d", z);
+    std::string url = "http://localhost:8000/black_point";
+    url += "?" + std::string(xStr) + "&"  + std::string(yStr) + "&" + std::string(zStr);
+    std::cout << "url " << url << std::endl;
+
     if (curl)
     {
         std::string s;
-        curl_easy_setopt(curl, CURLOPT_URL, "http://localhost:8000");
+        curl_easy_setopt(curl, CURLOPT_URL, url.data());
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, CurlWrite_CallbackFunc_StdString);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &s);
         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, postthis);
@@ -235,17 +254,18 @@ void notificationByNameExample(std::ostream& out, long port, const AmsAddr& serv
     releaseHandleExample(out, port, server, handle);
 }
 
-void WriteExample(std::ostream& out, long port, const AmsAddr& server,uint16_t wData)
+void WriteExample(std::ostream& out, long port, const AmsAddr& server,uint16_t wData, uint16_t x, uint16_t y, uint16_t z)
 {
     uint16_t buffer = wData;
-    std::string data = getData();
+    std::string data = getData(x, y, z);
     const char* dataChars = data.data();
     char a = 't';
     long size = strlen(dataChars)*sizeof(a);
-    out << "size:" << size << '\n';
-    out << "size:" << sizeof(a) << '\n';
 
 
+    out << "++++++++++++++++++++" <<  '\n';
+    out << "data " << dataChars << '\n';
+    out << "++++++++++++++++++++" <<  '\n';
     const long status = AdsSyncWriteReqEx(port, &server, 0x4020,2,size, dataChars);
     if (status) {
         out << "ADS read failed with: " << wData<< '\n';
@@ -253,33 +273,72 @@ void WriteExample(std::ostream& out, long port, const AmsAddr& server,uint16_t w
     }
     out << "Write Data: " << wData<< '\n';
 }
+//char* readLocation(std::ostream& out, long port, const AmsAddr& server, int* armStatusPtr)
+//{
+//    uint32_t bytesReadx =7;
+//    uint32_t bytesReady =7;
+//    uint32_t bytesReadz =7;
+//    char* data;
+//    char x[] = "123456";
+//    char y[] = "765432";
+//    char z[] = "111111";
+//
+//    out << __FUNCTION__ << "():\n";
+//    // read z location
+//    //const long statusZ = AdsSyncReadReqEx2(port, &server, 0x4020, 70, sizeof(z)*sizeof('a'), &z, &bytesReadz);
+//    // read y location
+//    //const long statusY = AdsSyncReadReqEx2(port, &server, 0x4020, 60, sizeof(y)*sizeof('a'), &y, &bytesReady);
+//    // read x location
+//    //const long statusX = AdsSyncReadReqEx2(port, &server, 0x4020, 50, sizeof(x)*sizeof('a'), &x, &bytesReadx);
+//    out << "x " << x << '\n';
+//    out << "y " << y << '\n';
+//    out << "z " << z << '\n';
+//    out << "+++++ " << '\n';
+//    strcat(data, x);
+//    strcat(data, y);
+//    strcat(data, z);
+//    out << "+++++ " << '\n';
+//    out << "data " << data << '\n';
+//    return data;
+//}
+
 void readExample(std::ostream& out, long port, const AmsAddr& server, int* armStatusPtr)
 {
-    uint32_t bytesRead =2;
+    uint32_t bytesRead = 2;
     uint16_t buffer;
 
     out << __FUNCTION__ << "():\n";
     const long status = AdsSyncReadReqEx2(port, &server, 0x4020, 0, sizeof(buffer), &buffer, &bytesRead);
-    if (*armStatusPtr != status) {
-	*armStatusPtr = status;
-	switch ((int)status) {
-	    case 0:
-	    case 4:
-	        WriteExample(out, port, server,buffer);
-		break;
-	    case 3:
-		postData();
-		break;
-	    default:
-		break;
-	}
-    }
     out << "ADS read " << std::dec << bytesRead << " bytes, value: 0x" << std::hex << buffer << '\n';
+    out << "status " << std::dec << status << '\n';
+
+    uint32_t bytesReadLocation =2;
+    uint16_t x;
+    uint16_t y;
+    uint16_t z;
+    // read z location
+    const long statusZ = AdsSyncReadReqEx2(port, &server, 0x4020, 70, sizeof(z), &z, &bytesReadLocation);
+    // read y location
+    const long statusY = AdsSyncReadReqEx2(port, &server, 0x4020, 60, sizeof(y), &y, &bytesReadLocation);
+    // read x location
+    const long statusX = AdsSyncReadReqEx2(port, &server, 0x4020, 50, sizeof(x), &x, &bytesReadLocation);
+
+    if (*armStatusPtr != buffer) {
+        *armStatusPtr = buffer;
+        switch (buffer) {
+            case 0:
+            case 4:
+                WriteExample(out, port, server,buffer, x, y, z);
+                break;
+            case 3:
+                postData(x, y, z);
+                break;
+            default:
+                break;
+        }
+    }
 
 }
-
-
-
 void readByNameExample(std::ostream& out, long port, const AmsAddr& server)
 {
     static const char handleName[] = "MAIN.iCount";
@@ -371,6 +430,7 @@ void runExample(std::ostream& out)
 int main()
 {
     try {
+
         runExample(std::cout);
     } catch (const std::runtime_error& ex) {
         std::cout << ex.what() << '\n';
